@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Level Builder (x,y canvas)</title>
+<style>
+  :root{ --bg:#0b1020; --panel:#141b30; --line:#2a3656; --ink:#e7edff; --dim:#9fb3e0; --gold:#ffd34d; }
+  *{box-sizing:border-box} html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:system-ui,Segoe UI,Roboto,sans-serif;display:flex;flex-direction:column}
+  header{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  header h1{font-size:15px;margin:0 8px 0 0}
+  header a{color:#9fd6ff;text-decoration:none;font-size:13px;margin-right:6px}
+  select,button{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:13px;cursor:pointer}
+  button.go{background:var(--gold);color:#1a1300;font-weight:700;border-color:var(--gold)}
+  #palette{display:flex;gap:5px;flex-wrap:wrap;padding:8px 14px;border-bottom:1px solid var(--line)}
+  .tool{padding:5px 9px;border-radius:7px;border:1px solid var(--line);background:var(--panel);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px}
+  .tool.on{outline:2px solid var(--gold);background:#1b2540}
+  .sw{width:12px;height:12px;border-radius:3px;border:1px solid #0006}
+  #wrap{flex:1;overflow:auto}
+  canvas{display:block;cursor:crosshair}
+  #hint{padding:6px 14px;color:var(--dim);font-size:12px;border-top:1px solid var(--line)}
+  #coord{color:var(--gold);font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧱 Level Builder</h1>
+  <a href="/">game</a><a href="/diary.html">diary</a><a href="/design.html">design lens</a>
+  <span style="flex:1"></span>
+  <label style="font-size:12px;color:var(--dim)">load</label>
+  <select id="loadSel"></select>
+  <label style="font-size:12px;color:var(--dim)">theme</label>
+  <select id="themeSel"></select>
+  <button id="clear">Clear</button>
+  <button id="export">Export JSON</button>
+  <button id="test" class="go">▶ Test in game</button>
+</header>
+<div id="palette"></div>
+<div id="wrap"><canvas id="cv"></canvas></div>
+<div id="hint">Click/drag to paint · right-click erases · cell <span id="coord">—</span> (x=column, y=row; ground=row 13). Lay GROUND for a path, set START &amp; GOAL, then ▶ Test. Paint right to grow the level.</div>
+
+<script type="module">
+import { buildLevelById, LEVELS, WORLDS } from './game/levels.js';
+
+const CELL = 26, H = 15, GROUND = 13;
+const THEMES = ['cave','dusk','desert','volcano','storm','day','sky','castle','snow','jungle','swamp','crystal','bastion'];
+const TOOLS = {
+  ground: { label:'Ground',     color:'#9c6b3f' },
+  oneway: { label:'One-way',    color:'#caa46a' },
+  blast:  { label:'Blast crate',color:'#e23b3b' },
+  qblock: { label:'? power',    color:'#ffc828' },
+  pipe:   { label:'Pipe',       color:'#3fce6a' },
+  coin:   { label:'Carrot',     color:'#ffd34d' },
+  spring: { label:'Spring',     color:'#e24b3a' },
+  goomba: { label:'Bot (walk)', color:'#8a7b5a' },
+  fly:    { label:'Drone (fly)',color:'#7aa0d0' },
+  start:  { label:'START',      color:'#5fd66e', special:'start' },
+  goal:   { label:'GOAL',       color:'#ffffff', special:'goal' },
+  erase:  { label:'Erase',      color:'#33405e', erase:true },
+};
+let tool = 'ground', W = 80, theme = 'cave';
+let start = { c:3, r:11 }, goal = { c:74, baseR:12 };
+let cells = {};                                  // "c,r" -> toolKey
+
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+
+const pal = document.getElementById('palette');
+pal.innerHTML = Object.entries(TOOLS).map(([k,t])=>`<div class="tool ${k===tool?'on':''}" data-k="${k}"><span class="sw" style="background:${t.color}"></span>${t.label}</div>`).join('');
+pal.querySelectorAll('.tool').forEach(el=>el.onclick=()=>{ tool=el.dataset.k; pal.querySelectorAll('.tool').forEach(x=>x.classList.toggle('on',x.dataset.k===tool)); });
+
+const loadSel = document.getElementById('loadSel');
+loadSel.innerHTML = '<option value="">— blank —</option>'
+  + (WORLDS||[]).map((w,i)=>`<option value="${w.id}">World ${i+1}: ${w.name}</option>`).join('')
+  + (LEVELS||[]).map(l=>`<option value="${l.id}">L${l.id}: ${l.name}</option>`).join('');
+loadSel.onchange = ()=>{ const id=Number(loadSel.value); if(id) loadLevel(id); else { cells={}; W=80; resize(); } };
+const themeSel = document.getElementById('themeSel');
+themeSel.innerHTML = THEMES.map(t=>`<option ${t===theme?'selected':''}>${t}</option>`).join('');
+themeSel.onchange = ()=>{ theme=themeSel.value; draw(); };
+
+function loadLevel(id){
+  let L; try { L = buildLevelById(id); } catch(e){ alert('load failed: '+e.message); return; }
+  cells={}; W=L.W; theme=L.theme; themeSel.value=theme;
+  const put=(arr,key)=>(L[arr]||[]).forEach(e=>{ if(e.c!=null) cells[`${Math.round(e.c)},${e.r}`]=key; });
+  put('solids','ground'); put('oneways','oneway'); put('blastblocks','blast');
+  put('qblocks','qblock'); put('coins','coin'); put('springs','spring');
+  (L.pipes||[]).forEach(p=>{ for(let r=p.r;r<H;r++){ cells[`${p.c},${r}`]='pipe'; cells[`${p.c+1},${r}`]='pipe'; } });
+  (L.enemies||[]).forEach(e=>{ cells[`${Math.round(e.c)},${e.r}`]= e.fly?'fly':'goomba'; });
+  if(L.start) start={c:L.start.c,r:L.start.r};
+  if(L.goal) goal={c:L.goal.c,baseR:L.goal.baseR};
+  resize();
+}
+
+function resize(){ cv.width=W*CELL; cv.height=H*CELL; draw(); }
+function draw(){
+  ctx.fillStyle='#1b2540'; ctx.fillRect(0,0,cv.width,cv.height);
+  for(const [key,k] of Object.entries(cells)){
+    const [c,r]=key.split(',').map(Number);
+    ctx.fillStyle=TOOLS[k]?.color||'#888'; ctx.fillRect(c*CELL+1,r*CELL+1,CELL-2,CELL-2);
+    if(k==='coin'||k==='blast'){ ctx.fillStyle=k==='coin'?'#1a1300':'#fff'; ctx.beginPath(); ctx.arc(c*CELL+CELL/2,r*CELL+CELL/2,4,0,7); ctx.fill(); }
+  }
+  ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=1;
+  for(let c=0;c<=W;c++){ ctx.beginPath(); ctx.moveTo(c*CELL,0); ctx.lineTo(c*CELL,cv.height); ctx.stroke(); }
+  for(let r=0;r<=H;r++){ ctx.beginPath(); ctx.moveTo(0,r*CELL); ctx.lineTo(cv.width,r*CELL); ctx.stroke(); }
+  ctx.strokeStyle='rgba(255,211,77,0.4)'; ctx.beginPath(); ctx.moveTo(0,GROUND*CELL); ctx.lineTo(cv.width,GROUND*CELL); ctx.stroke();
+  const mark=(c,r,t,col)=>{ ctx.globalAlpha=.9; ctx.fillStyle=col; ctx.fillRect(c*CELL+2,r*CELL+2,CELL-4,CELL-4); ctx.globalAlpha=1; ctx.fillStyle='#04210a'; ctx.font='bold 10px system-ui'; ctx.fillText(t,c*CELL+8,r*CELL+CELL-8); };
+  mark(start.c,start.r,'S','#5fd66e'); mark(goal.c,goal.baseR,'G','#ffffff');
+  ctx.fillStyle='#6b7aa0'; ctx.font='9px system-ui';
+  for(let c=0;c<W;c+=5){ ctx.fillText(c,c*CELL+2,9); }
+}
+function cellAt(ev){ const r=cv.getBoundingClientRect(); return { c:Math.floor((ev.clientX-r.left)/CELL), r:Math.floor((ev.clientY-r.top)/CELL) }; }
+function paint(c,r,erase){
+  if(c<0||r<0||r>=H) return;
+  if(c>=W-1){ W=c+8; resize(); }
+  const t=TOOLS[tool];
+  if(t.special==='start'){ start={c,r}; draw(); return; }
+  if(t.special==='goal'){ goal={c,baseR:r}; draw(); return; }
+  if(erase||t.erase) delete cells[`${c},${r}`]; else cells[`${c},${r}`]=tool;
+  draw();
+}
+let painting=false;
+cv.addEventListener('mousedown',e=>{ e.preventDefault(); painting=true; const{c,r}=cellAt(e); paint(c,r,e.button===2); });
+cv.addEventListener('mousemove',e=>{ const{c,r}=cellAt(e); document.getElementById('coord').textContent=`x=${c}, y=${r}`; if(painting) paint(c,r,(e.buttons&2)===2); });
+window.addEventListener('mouseup',()=>painting=false);
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+
+function buildLevel(){
+  const L={ id:999, name:'Custom (editor)', theme, W:Math.max(W,goal.c+6), H, groundTop:GROUND,
+    solids:[],oneways:[],blastblocks:[],qblocks:[],coins:[],springs:[],pipes:[],enemies:[],
+    ices:[],bricks:[],piranhas:[],ceiling:[],conveyors:[],spouts:[],droppers:[],crumbles:[],
+    dashpads:[],zones:[],stickies:[],firebars:[],bouncers:[],movers:[],gaps:[],checkpoints:[],
+    start:{...start}, goal:{...goal} };
+  const pipeTop={};
+  for(const [key,k] of Object.entries(cells)){
+    const [c,r]=key.split(',').map(Number);
+    if(k==='ground') L.solids.push({c,r});
+    else if(k==='oneway') L.oneways.push({c,r});
+    else if(k==='blast') L.blastblocks.push({c,r});
+    else if(k==='qblock') L.qblocks.push({c,r,power:true});
+    else if(k==='coin') L.coins.push({c,r});
+    else if(k==='spring') L.springs.push({c,r});
+    else if(k==='goomba') L.enemies.push({c,r,kind:'goomba'});
+    else if(k==='fly') L.enemies.push({c,r,kind:'bat',fly:true,c0:c-3,c1:c+3});
+    else if(k==='pipe') pipeTop[c]=Math.min(pipeTop[c]??H,r);
+  }
+  Object.entries(pipeTop).forEach(([c,top])=>{ c=Number(c); if(L.pipes.some(p=>p.c+1===c))return; L.pipes.push({c,r:top,h:GROUND-top}); });
+  const hasG=new Set(L.solids.filter(s=>s.r>=GROUND).map(s=>s.c));
+  let run=null;
+  for(let c=0;c<L.W;c++){ if(!hasG.has(c)){ run=run||[c,c]; run[1]=c; } else if(run){ L.gaps.push(run); run=null; } }
+  return L;
+}
+document.getElementById('clear').onclick=()=>{ if(confirm('Clear the canvas?')){ cells={}; draw(); } };
+document.getElementById('export').onclick=()=>{ const b=new Blob([JSON.stringify(buildLevel(),null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='custom-level.json'; a.click(); };
+document.getElementById('test').onclick=()=>{ localStorage.setItem('jazz_custom_level',JSON.stringify(buildLevel())); window.open('/?custom=1','_blank'); };
+
+resize();
+</script>
+</body>
+</html>

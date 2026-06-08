@@ -1,0 +1,12 @@
+{
+  "name": "Game Template",
+  "tagline": "a platformer built on the game-engine — re-skin me",
+  "hero": "placeholder mascot (replace me)",
+  "verb": "run · jump",
+  "worlds": ["First Steps", "Caverns", "Skyway", "The Keep", "Finale"],
+  "levelCount": 5,
+  "art": "neutral placeholder (replace)",
+  "music": "procedural (add your own)",
+  "engine": "game-engine",
+  "builder": "/build.html"
+}

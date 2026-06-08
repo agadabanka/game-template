@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Brain · the-platformer</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script>
+      (function () {
+        try {
+          var pref = localStorage.getItem('theme') || 'system';
+          var mode =
+            pref === 'system'
+              ? matchMedia('(prefers-color-scheme: light)').matches
+                ? 'light'
+                : 'dark'
+              : pref;
+          document.documentElement.dataset.theme = mode;
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="page page--admin">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark">P</span>
+          <span class="brand-name">the-platformer · Brain</span>
+        </div>
+        <a class="topbar-link" href="/">← Public chat</a>
+      </header>
+
+      <main class="admin">
+        <div class="admin-intro">
+          <h1>What the assistant knows</h1>
+          <p>
+            Anything you write here is injected into the assistant's system
+            prompt on every chat as authoritative context — it overrides the
+            baked-in prompt on conflict. Use it for pricing, availability,
+            FAQs, or specifics you'd want surfaced. Plain text, no format
+            required. Takes effect immediately on the next message — no redeploy.
+          </p>
+        </div>
+
+        <div id="admin-auth" class="admin-auth" hidden>
+          <label for="admin-token">Admin token</label>
+          <input id="admin-token" type="password" placeholder="ADMIN_TOKEN" />
+          <p class="muted">Set <code>ADMIN_TOKEN</code> in your env to gate this page.</p>
+        </div>
+
+        <textarea id="brain" rows="20" placeholder="e.g.
+
+Pricing: $X for the standard plan.
+Availability: ...
+FAQs:
+- 'Do you offer a trial?' — yes, 14 days.
+"></textarea>
+
+        <div class="admin-actions">
+          <button id="save" type="button">Save</button>
+          <span id="status" class="status"></span>
+        </div>
+      </main>
+    </div>
+
+    <script src="/theme.js" type="module"></script>
+    <script src="/admin.js" type="module"></script>
+  </body>
+</html>

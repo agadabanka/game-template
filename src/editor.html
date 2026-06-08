@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Design Lens — the-platformer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --bg:#0c0e14; --panel:#141826; --panel2:#1b2030; --ink:#e7ecf5; --dim:#8b93a7;
+      --line:#27304a; --accent:#7dff5a; --gold:#ffcf45; --warn:#ff6b6b; --cool:#8fd0ff;
+      --eng:#7dff5a; --dyn:#ffcf45; --arc:#8fd0ff; --flow:#c9a8ff;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#16203a 0,var(--bg) 55%);
+      color:var(--ink);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+    .wrap{max-width:1180px;margin:0 auto;padding:22px 20px 60px}
+    h1{font-family:'Press Start 2P';font-size:15px;letter-spacing:1px;margin:0;color:#fff}
+    h1 small{display:block;font-family:Inter;font-weight:600;font-size:12px;color:var(--dim);margin-top:8px;letter-spacing:0}
+    .top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+    select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:10px;
+      padding:10px 14px;font-family:Inter;font-weight:700;font-size:14px;cursor:pointer}
+    .panel{background:linear-gradient(180deg,var(--panel),#10131f);border:1px solid var(--line);
+      border-radius:16px;padding:16px 18px;margin-bottom:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .label{font-family:'Press Start 2P';font-size:9px;letter-spacing:1px;color:var(--dim);text-transform:uppercase;margin:0 0 10px}
+    /* score header */
+    .scorebar{display:grid;grid-template-columns:170px 1fr;gap:20px;align-items:center}
+    .fun{font-family:'Press Start 2P';font-size:34px;line-height:1;color:#fff}
+    .fun span{font-size:13px;color:var(--dim)}
+    .funlabel{font-family:'Press Start 2P';font-size:8px;color:var(--accent);letter-spacing:1px;margin-top:8px}
+    .gauges{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+    .g{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+    .g .gn{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;display:flex;justify-content:space-between}
+    .g .gv{font-family:'Press Start 2P';font-size:16px;margin:8px 0 7px}
+    .g .bar{height:7px;border-radius:5px;background:#0c1019;overflow:hidden}
+    .g .bar i{display:block;height:100%;border-radius:5px}
+    .g .gw{font-size:10px;color:var(--dim);margin-top:7px}
+    canvas{width:100%;display:block;border-radius:10px;background:#0a0c12}
+    .legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:12px;font-size:11px;color:var(--dim)}
+    .legend b{color:var(--ink);font-weight:700}
+    .chip{display:inline-flex;align-items:center;gap:6px}
+    .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+    .cols{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+    @media(max-width:860px){.cols{grid-template-columns:1fr}.scorebar{grid-template-columns:1fr}.gauges{grid-template-columns:repeat(2,1fr)}}
+    .diag{font-size:14px;line-height:1.5}
+    .diag .tag{display:inline-block;font-family:'Press Start 2P';font-size:8px;padding:5px 8px;border-radius:6px;margin-right:8px;color:#0b0b0b}
+    .verdict{color:var(--dim);font-size:13px;line-height:1.6;margin-top:10px}
+    .fixes{list-style:none;padding:0;margin:10px 0 0}
+    .fixes li{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px;line-height:1.45}
+    .pin{flex:0 0 auto;font-family:'Press Start 2P';font-size:8px;color:#0b0b0b;background:var(--gold);
+      border-radius:5px;padding:4px 6px;height:fit-content}
+    .meta{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--dim);margin-top:4px}
+    .meta b{color:var(--ink)}
+    .formula{font-family:ui-monospace,monospace;font-size:12px;color:var(--cool);background:#0c1019;
+      border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-top:12px;overflow-x:auto}
+    .miss{color:var(--warn);font-size:13px}
+    .editbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+    .ebtn{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;
+      padding:6px 10px;font-family:Inter;font-weight:700;font-size:12px;cursor:pointer}
+    .ebtn:hover{border-color:var(--accent)}
+    .ebtn.on{background:var(--accent);color:#0b0b0b;border-color:var(--accent)}
+    .ptag{background:#0c1019;color:var(--dim);border:1px solid var(--line);border-radius:7px;
+      padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;text-transform:capitalize}
+    .ptag:hover{color:var(--ink);border-color:var(--cool)}
+    .ptag.sel{background:var(--cool);color:#06121f;border-color:var(--cool)}
+    .ptag.cut.sel{background:var(--warn);border-color:var(--warn);color:#1a0606}
+    #feelpanel{margin:0 0 12px}
+    .fp{background:#0c1019;border:1px solid var(--accent);border-radius:12px;padding:13px 14px}
+    .fp-h{font-size:14px;font-weight:700;margin-bottom:10px}
+    .fp-chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+    .fchip{background:var(--panel2);color:var(--dim);border:1px solid var(--line);border-radius:999px;
+      padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer}
+    .fchip:hover{color:var(--ink);border-color:var(--accent)}
+    .fchip.on{background:var(--accent);color:#06210a;border-color:var(--accent)}
+    .fp-in{width:100%;background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+      border-radius:8px;padding:9px 11px;font-size:13px;font-family:Inter;margin-bottom:10px}
+    .fp-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .fp-lbl{font-size:12px;color:var(--dim)}
+    .fp-sel{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <h1>DESIGN&nbsp;LENS<small>How the AI builds &amp; scores a level — one shared x-axis for the curve, the map, and the fixes.</small></h1>
+      <select id="lvl" aria-label="level"></select>
+    </div>
+
+    <div class="panel">
+      <div class="scorebar">
+        <div>
+          <div class="fun" id="fun">—<span>/100</span></div>
+          <div class="funlabel" id="funlabel">FUN&nbsp;SCORE</div>
+          <div class="meta" id="meta"></div>
+        </div>
+        <div class="gauges" id="gauges"></div>
+      </div>
+      <div class="formula" id="formula"></div>
+    </div>
+
+    <div class="panel">
+      <div class="label">Interest curve &times; level map &nbsp;·&nbsp; <span style="color:var(--dim)">shared position axis</span></div>
+      <div class="editbar">
+        <button id="editToggle" class="ebtn">✎ Design by feeling</button>
+        <button id="resetEdit" class="ebtn" style="display:none">↺ reset</button>
+        <span id="edithint" style="display:none;font-size:11px;color:var(--dim)">click the map where you want a feeling — tell me the <b>feeling</b>, I (Gemini) place the beat · live <b>predicted</b> score</span>
+      </div>
+      <div id="feelpanel"></div>
+      <canvas id="cv" width="2240" height="900"></canvas>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <div class="cols">
+      <div class="panel">
+        <div class="label">AI diagnosis</div>
+        <div class="diag" id="diag"></div>
+        <div class="verdict" id="verdict"></div>
+      </div>
+      <div class="panel">
+        <div class="label" id="fixeslabel">Top fixes &nbsp;·&nbsp; <span style="color:var(--dim)">pinned to the map ▲</span></div>
+        <ul class="fixes" id="fixes"></ul>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./editor.js"></script>
+</body>
+</html>

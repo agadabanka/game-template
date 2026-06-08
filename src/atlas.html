@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Level Atlas — the-platformer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{ --bg:#0c0e14; --panel:#141826; --panel2:#1b2030; --ink:#e7ecf5; --dim:#8b93a7; --line:#27304a;
+      --accent:#7dff5a; --gold:#ffcf45; --cool:#8fd0ff; --warn:#ff6b6b; --viol:#c9a8ff; }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#16203a 0,var(--bg) 55%);
+      color:var(--ink);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+    .wrap{max-width:1200px;margin:0 auto;padding:22px 20px 70px}
+    h1{font-family:'Press Start 2P';font-size:15px;letter-spacing:1px;margin:0;color:#fff}
+    h1 small{display:block;font-family:Inter;font-weight:600;font-size:12px;color:var(--dim);margin-top:8px;letter-spacing:0}
+    .panel{background:linear-gradient(180deg,var(--panel),#10131f);border:1px solid var(--line);
+      border-radius:16px;padding:16px 18px;margin:16px 0;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .label{font-family:'Press Start 2P';font-size:9px;letter-spacing:1px;color:var(--dim);text-transform:uppercase;margin:0 0 12px}
+    canvas{width:100%;display:block;border-radius:10px;background:#0a0c12}
+    .stat{display:flex;gap:26px;flex-wrap:wrap;margin:12px 0 0}
+    .stat .s b{font-family:'Press Start 2P';font-size:18px;color:#fff;display:block}
+    .stat .s span{font-size:11px;color:var(--dim)}
+    .legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:10px;font-size:11px;color:var(--dim)}
+    .chip{display:inline-flex;align-items:center;gap:6px}.dot{width:10px;height:10px;border-radius:3px}
+    .groups{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+    @media(max-width:900px){.groups{grid-template-columns:repeat(2,1fr)}}
+    .g{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
+    .g h3{margin:0 0 4px;font-size:13px}.g .lv{font-size:11px;color:var(--dim);margin-bottom:8px}
+    .g .fun{font-family:'Press Start 2P';font-size:15px}
+    .g canvas{height:64px}
+    .g .verdict{font-size:11px;color:var(--ink);margin-top:8px;line-height:1.4}
+    .g .flag{color:var(--warn)} .g .ok{color:var(--accent)}
+    .prose{font-size:13.5px;line-height:1.6}.prose b{color:#fff}.prose code{font-family:ui-monospace,monospace;background:#0c1019;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12px;color:var(--cool)}
+    ol.method{font-size:13px;line-height:1.55} ol.method li{margin:6px 0}
+    .callout{background:rgba(255,207,69,.10);border-left:3px solid var(--gold);border-radius:0 10px 10px 0;padding:10px 14px;margin:12px 0;font-size:13px;line-height:1.5}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>LEVEL&nbsp;ATLAS<small>How the elements compound across the campaign — and could 13 levels become 5? A reusable consolidation method, computed live from the level builders + feel model.</small></h1>
+
+    <div class="panel">
+      <div class="label">The campaign at a glance</div>
+      <div class="stat" id="overview"></div>
+    </div>
+
+    <div class="panel">
+      <div class="label">Mechanic vocabulary &nbsp;·&nbsp; <span style="color:var(--dim)">which verbs appear in which level (the compounding curriculum)</span></div>
+      <canvas id="matrix" width="2200" height="1000"></canvas>
+      <div class="legend" id="mlegend"></div>
+    </div>
+
+    <div class="panel">
+      <div class="label">Vocabulary growth &nbsp;·&nbsp; <span style="color:var(--dim)">distinct verbs introduced, level by level</span></div>
+      <canvas id="vocab" width="2200" height="420"></canvas>
+    </div>
+
+    <div class="panel">
+      <div class="label">Proposal · 13 → 5 &nbsp;·&nbsp; <span style="color:var(--dim)">contiguous groups balanced by length; the merged interest arc per group</span></div>
+      <div class="groups" id="groups"></div>
+      <div class="callout" id="finding"></div>
+    </div>
+
+    <div class="panel">
+      <div class="label">The strategy (generic)</div>
+      <div class="prose" id="strategy"></div>
+    </div>
+  </div>
+  <script type="module" src="./atlas.js"></script>
+</body>
+</html>
