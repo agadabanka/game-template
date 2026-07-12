@@ -61,6 +61,15 @@ function adminAuthorized(req) {
 
 app.get('/health', (_req, res) => res.json({ ok: true, model: MODEL }));
 
+// build identity for the update-shell: the version changes on every Railway
+// deploy (commit sha), so clients can offer a "tap to update" reload instead
+// of being abruptly restarted mid-game. Boot-time fallback covers non-Railway.
+const BUILD = {
+  version: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.RAILWAY_DEPLOYMENT_ID || 'boot-' + Date.now(),
+  booted_at: new Date().toISOString(),
+};
+app.get('/api/version', (_req, res) => res.json({ ok: true, ...BUILD }));
+
 // Design-lens data: the latest feel snapshot for a level (curve + 4 components +
 // diagnosis + fixes), read from the eval's scores dir. Powers /editor.
 app.get('/api/feel/:level', (req, res) => {
